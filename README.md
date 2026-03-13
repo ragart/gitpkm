@@ -24,7 +24,6 @@ The project is model-first:
 - Example automation config: see [schema/automation.example.json](schema/automation.example.json)
 - Publishing safety: see [pkm.wiki/Publishing-Safety.md](pkm.wiki/Publishing-Safety.md)
 - Operational conventions: see [pkm.wiki/Operational-Conventions.md](pkm.wiki/Operational-Conventions.md)
-- Implementation roadmap: see [pkm.wiki/Implementation-Roadmap.md](pkm.wiki/Implementation-Roadmap.md)
 
 ## Documentation Structure
 
@@ -41,7 +40,7 @@ The project is model-first:
 - Separation of concerns: structured data vs narrative notes
 - Safe automation using generated markers to avoid overwriting manual text
 
-## Planned Repository Layout
+## Repository Layout
 
 ```text
 data/        # CSV tables (source of truth)
@@ -51,9 +50,3 @@ schema/      # schema documentation
 notebooks/   # optional analysis
 pkm.wiki/    # user-facing documentation
 ```
-
-## Current Direction
-
-1. Stabilize a reusable PKM model and workflow.
-2. Provide scripts and examples that implement that model.
-3. Keep everything durable, simple, and Git-friendly.
