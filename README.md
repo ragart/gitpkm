@@ -15,19 +15,19 @@ The project is model-first:
 
 ## Start Here
 
-- Quickstart: see [pkm.wiki/Quickstart.md](pkm.wiki/Quickstart.md)
-- CLI usage: see [pkm.wiki/CLI.md](pkm.wiki/CLI.md)
-- Data model and ID rules: see [pkm.wiki/Data-Model-and-IDs.md](pkm.wiki/Data-Model-and-IDs.md)
-- Formal schema contract: see [pkm.wiki/Schema-Contract.md](pkm.wiki/Schema-Contract.md)
-- Automation workflow: see [pkm.wiki/Automation-and-Validation.md](pkm.wiki/Automation-and-Validation.md)
+- Quickstart: see [Quickstart](https://github.com/ragart/gitpkm/wiki/Quickstart)
+- CLI usage: see [CLI](https://github.com/ragart/gitpkm/wiki/CLI)
+- Data model and ID rules: see [Data-Model-and-IDs](https://github.com/ragart/gitpkm/wiki/Data-Model-and-IDs)
+- Formal schema contract: see [Schema-Contract](https://github.com/ragart/gitpkm/wiki/Schema-Contract)
+- Automation workflow: see [Automation-and-Validation](https://github.com/ragart/gitpkm/wiki/Automation-and-Validation)
 - Automation config: see [schema/automation.json](schema/automation.json)
 - Example automation config: see [schema/automation.example.json](schema/automation.example.json)
-- Publishing safety: see [pkm.wiki/Publishing-Safety.md](pkm.wiki/Publishing-Safety.md)
-- Operational conventions: see [pkm.wiki/Operational-Conventions.md](pkm.wiki/Operational-Conventions.md)
+- Publishing safety: see [Publishing-Safety](https://github.com/ragart/gitpkm/wiki/Publishing-Safety)
+- Operational conventions: see [Operational-Conventions](https://github.com/ragart/gitpkm/wiki/Operational-Conventions)
 
 ## Documentation Structure
 
-- User-facing docs are in the project wiki folder: [pkm.wiki](pkm.wiki)
+- User-facing docs are in the project wiki: [gitpkm wiki](https://github.com/ragart/gitpkm/wiki)
 - Internal AI context and full design notes live in [_instructions.md](_instructions.md)
 - Release notes are tracked in [CHANGELOG.md](CHANGELOG.md)
 - License is defined in [LICENSE](LICENSE)
