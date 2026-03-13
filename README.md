@@ -15,15 +15,15 @@ The project is model-first:
 
 ## Start Here
 
-- Quickstart: see [Quickstart](https://github.com/ragart/gitpkm/wiki/Quickstart)
-- CLI usage: see [CLI](https://github.com/ragart/gitpkm/wiki/CLI)
-- Data model and ID rules: see [Data-Model-and-IDs](https://github.com/ragart/gitpkm/wiki/Data-Model-and-IDs)
-- Formal schema contract: see [Schema-Contract](https://github.com/ragart/gitpkm/wiki/Schema-Contract)
-- Automation workflow: see [Automation-and-Validation](https://github.com/ragart/gitpkm/wiki/Automation-and-Validation)
+- [Quickstart](https://github.com/ragart/gitpkm/wiki/Quickstart)
+- [CLI](https://github.com/ragart/gitpkm/wiki/CLI)
+- [Data-Model-and-IDs](https://github.com/ragart/gitpkm/wiki/Data-Model-and-IDs)
+- [Schema-Contract](https://github.com/ragart/gitpkm/wiki/Schema-Contract)
+- [Automation-and-Validation](https://github.com/ragart/gitpkm/wiki/Automation-and-Validation)
 - Automation config: see [schema/automation.json](schema/automation.json)
 - Example automation config: see [schema/automation.example.json](schema/automation.example.json)
-- Publishing safety: see [Publishing-Safety](https://github.com/ragart/gitpkm/wiki/Publishing-Safety)
-- Operational conventions: see [Operational-Conventions](https://github.com/ragart/gitpkm/wiki/Operational-Conventions)
+- [Publishing-Safety](https://github.com/ragart/gitpkm/wiki/Publishing-Safety)
+- [Operational-Conventions](https://github.com/ragart/gitpkm/wiki/Operational-Conventions)
 
 ## Documentation Structure
 
