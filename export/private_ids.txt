@@ -1,0 +1,5 @@
+# One entity ID per line.
+# Rows/notes matching these IDs are removed from exported public snapshot.
+# Example:
+# person_real_name
+# org_private_employer

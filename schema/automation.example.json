@@ -1,0 +1,38 @@
+{
+  "indexes": [
+    {
+      "type": "entity_list",
+      "entity_table": "programs",
+      "entity_id_column": "id",
+      "title": "All Programs",
+      "output": "all_programs.md",
+      "remove_when_empty": true
+    },
+    {
+      "type": "grouped_relation",
+      "entity_table": "programs",
+      "relation_table": "participations",
+      "entity_id_column": "id",
+      "relation_entity_fk": "program_id",
+      "relation_item_fk": "person_id",
+      "relation_role_column": "role",
+      "role": "mentor",
+      "title": "Program Mentors",
+      "output": "program_mentors.md",
+      "remove_when_empty": true
+    },
+    {
+      "type": "grouped_relation",
+      "entity_table": "programs",
+      "relation_table": "participations",
+      "entity_id_column": "id",
+      "relation_entity_fk": "program_id",
+      "relation_item_fk": "person_id",
+      "relation_role_column": "role",
+      "role": "mentee",
+      "title": "Program Mentees",
+      "output": "program_mentees.md",
+      "remove_when_empty": true
+    }
+  ]
+}

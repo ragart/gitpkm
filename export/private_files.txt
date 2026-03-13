@@ -1,0 +1,5 @@
+# One pattern per line, matched against paths relative to notes/.
+# Use this to exclude private attachments from public export.
+# Examples:
+# people/private_*.png
+# assets/receipts/**

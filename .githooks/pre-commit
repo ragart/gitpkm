@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+echo "[pkm pre-commit] Running pipeline with scripts/runtime/pkm_python.sh"
+"$REPO_ROOT/scripts/runtime/pkm_python.sh" "$REPO_ROOT/scripts/automation/run_all.py"

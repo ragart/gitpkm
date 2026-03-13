@@ -1,0 +1,34 @@
+name: PKM Checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run PKM pipeline
+        run: |
+          bash scripts/runtime/pkm_python.sh scripts/automation/run_all.py
+
+      - name: Run regression tests
+        run: |
+          python -m unittest discover -s tests -v
+
+      - name: Verify idempotency
+        run: |
+          bash scripts/runtime/pkm_python.sh scripts/automation/run_all.py
+          git diff --exit-code
+          git diff --cached --exit-code
