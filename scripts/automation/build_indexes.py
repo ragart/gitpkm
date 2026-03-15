@@ -75,6 +75,20 @@ def build_entity_table_by_id() -> Dict[str, str]:
     return table_by_id
 
 
+def build_entity_name_by_id() -> Dict[str, str]:
+    name_by_id: Dict[str, str] = {}
+    for table_name in load_entity_tables():
+        csv_path = DATA_DIR / f"{table_name}.csv"
+        if not csv_path.exists():
+            continue
+        for row in read_csv(csv_path):
+            entity_id = (row.get("id") or "").strip()
+            entity_name = (row.get("name") or "").strip()
+            if entity_id:
+                name_by_id[entity_id] = entity_name or entity_id
+    return name_by_id
+
+
 def build_note_link(from_dir: Path, table_name: str, entity_id: str) -> str:
     target = INDEX_DIR.parent / table_name / f"{entity_id}.md"
     rel = posixpath.relpath(target.as_posix(), start=from_dir.as_posix())
@@ -86,6 +100,22 @@ def render_entity_link(from_dir: Path, entity_id: str, table_by_id: Dict[str, st
     if not table_name:
         return entity_id
     return build_note_link(from_dir, table_name, entity_id)
+
+
+def render_entity_name_link(
+    from_dir: Path,
+    entity_id: str,
+    table_by_id: Dict[str, str],
+    name_by_id: Dict[str, str],
+) -> str:
+    table_name = table_by_id.get(entity_id)
+    entity_name = (name_by_id.get(entity_id) or "").strip() or entity_id
+    if not table_name:
+        return entity_name
+
+    target = INDEX_DIR.parent / table_name / f"{entity_id}.md"
+    rel = posixpath.relpath(target.as_posix(), start=from_dir.as_posix())
+    return f"[{entity_name}]({rel})"
 
 
 def build_index_plan(config: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], int, int]:
@@ -160,6 +190,7 @@ def build_entity_table(
     columns: List[str],
     entity_id_col: str,
     table_by_id: Dict[str, str],
+    name_by_id: Dict[str, str],
 ) -> str:
     lines = [f"# {title}", ""]
 
@@ -168,21 +199,40 @@ def build_entity_table(
         lines.append("")
         return "\n".join(lines)
 
+    visible_columns: List[str] = [c for c in columns if c != entity_id_col and c != "id"]
+    if not visible_columns:
+        lines.append("- (none)")
+        lines.append("")
+        return "\n".join(lines)
+
+    display_headers: List[str] = []
+    for column in visible_columns:
+        if column.endswith("_id"):
+            display_headers.append(f"{column[:-3]}_name")
+        else:
+            display_headers.append(column)
+
     rows = sorted(entities, key=lambda row: (row.get(entity_id_col) or "").strip())
-    lines.append("| " + " | ".join(columns) + " |")
-    lines.append("| " + " | ".join("---" for _ in columns) + " |")
+    lines.append("| " + " | ".join(display_headers) + " |")
+    lines.append("| " + " | ".join("---" for _ in display_headers) + " |")
 
     for row in rows:
         rendered: List[str] = []
-        for column in columns:
+        row_entity_id = (row.get(entity_id_col) or "").strip()
+        for column in visible_columns:
             value = (row.get(column) or "").strip()
-            if column == entity_id_col and value:
-                value = render_entity_link(INDEX_DIR, value, table_by_id)
+            if column == "name" and row_entity_id:
+                value = render_entity_name_link(INDEX_DIR, row_entity_id, table_by_id, name_by_id)
+            elif column.endswith("_id"):
+                if value and value in table_by_id:
+                    value = render_entity_name_link(INDEX_DIR, value, table_by_id, name_by_id)
+                else:
+                    value = ""
             rendered.append(escape_cell(value))
         lines.append("| " + " | ".join(rendered) + " |")
 
     if not rows:
-        lines.append("| " + " | ".join("(none)" for _ in columns) + " |")
+        lines.append("| " + " | ".join("(none)" for _ in visible_columns) + " |")
 
     lines.append("")
     return "\n".join(lines)
@@ -240,6 +290,7 @@ def main() -> int:
 
     INDEX_DIR.mkdir(parents=True, exist_ok=True)
     table_by_id = build_entity_table_by_id()
+    name_by_id = build_entity_name_by_id()
 
     changed = 0
 
@@ -306,6 +357,7 @@ def main() -> int:
                 columns=columns,
                 entity_id_col=entity_id_col,
                 table_by_id=table_by_id,
+                name_by_id=name_by_id,
             )
             changed += int(write_if_changed(output_path, content))
             continue
