@@ -1,0 +1,116 @@
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+from scripts.automation import build_indexes
+
+
+class BuildIndexesTests(unittest.TestCase):
+    def test_auto_generates_entity_index_without_config(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            data_dir = root / "data"
+            index_dir = root / "notes" / "indexes"
+            data_dir.mkdir(parents=True)
+            index_dir.mkdir(parents=True)
+
+            (data_dir / "people.csv").write_text(
+                "id,name\nperson_b,Bravo\nperson_a,Alpha\n",
+                encoding="utf-8",
+            )
+
+            old_root = build_indexes.ROOT
+            old_data = build_indexes.DATA_DIR
+            old_index = build_indexes.INDEX_DIR
+            old_config = build_indexes.AUTOMATION_CONFIG
+
+            try:
+                build_indexes.ROOT = root
+                build_indexes.DATA_DIR = data_dir
+                build_indexes.INDEX_DIR = index_dir
+                build_indexes.AUTOMATION_CONFIG = root / "schema" / "automation.json"
+
+                code = build_indexes.main()
+            finally:
+                build_indexes.ROOT = old_root
+                build_indexes.DATA_DIR = old_data
+                build_indexes.INDEX_DIR = old_index
+                build_indexes.AUTOMATION_CONFIG = old_config
+
+            self.assertEqual(code, 0)
+
+            output_path = index_dir / "all_people.md"
+            self.assertTrue(output_path.exists())
+            content = output_path.read_text(encoding="utf-8")
+            self.assertIn("# All People", content)
+            self.assertIn("- [[person_a]]", content)
+            self.assertIn("- [[person_b]]", content)
+
+    def test_configured_output_has_priority_over_auto_output(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            data_dir = root / "data"
+            schema_dir = root / "schema"
+            index_dir = root / "notes" / "indexes"
+            data_dir.mkdir(parents=True)
+            schema_dir.mkdir(parents=True)
+            index_dir.mkdir(parents=True)
+
+            (data_dir / "programs.csv").write_text(
+                "id,name\nprog_b,Bravo\nprog_a,Alpha\n",
+                encoding="utf-8",
+            )
+            (data_dir / "games.csv").write_text(
+                "id,name\ngame_z,Zeta\n",
+                encoding="utf-8",
+            )
+
+            (schema_dir / "automation.json").write_text(
+                json.dumps(
+                    {
+                        "indexes": [
+                            {
+                                "type": "entity_list",
+                                "entity_table": "programs",
+                                "entity_id_column": "id",
+                                "title": "Configured Programs",
+                                "output": "all_programs.md",
+                                "remove_when_empty": True,
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            old_root = build_indexes.ROOT
+            old_data = build_indexes.DATA_DIR
+            old_index = build_indexes.INDEX_DIR
+            old_config = build_indexes.AUTOMATION_CONFIG
+
+            try:
+                build_indexes.ROOT = root
+                build_indexes.DATA_DIR = data_dir
+                build_indexes.INDEX_DIR = index_dir
+                build_indexes.AUTOMATION_CONFIG = schema_dir / "automation.json"
+
+                code = build_indexes.main()
+            finally:
+                build_indexes.ROOT = old_root
+                build_indexes.DATA_DIR = old_data
+                build_indexes.INDEX_DIR = old_index
+                build_indexes.AUTOMATION_CONFIG = old_config
+
+            self.assertEqual(code, 0)
+
+            programs_index = (index_dir / "all_programs.md").read_text(encoding="utf-8")
+            self.assertIn("# Configured Programs", programs_index)
+
+            games_index = index_dir / "all_games.md"
+            self.assertTrue(games_index.exists())
+            self.assertIn("# All Games", games_index.read_text(encoding="utf-8"))
+
+
+if __name__ == "__main__":
+    unittest.main()
