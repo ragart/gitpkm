@@ -40,13 +40,13 @@ if [[ "${CONDA_DEFAULT_ENV:-}" == "$CONDA_ENV" ]]; then
 fi
 
 if ! command -v conda >/dev/null 2>&1; then
-  echo "[pkm] PKM_CONDA_ENV is set to '$CONDA_ENV' but conda is not available in PATH."
-  exit 1
+  echo "[pkm] PKM_CONDA_ENV is set to '$CONDA_ENV' but conda is not available in PATH. Falling back to system Python."
+  exec "${PYTHON_BIN:-python3}" "$@"
 fi
 
 if ! conda env list | awk '{print $1}' | grep -qx "$CONDA_ENV"; then
-  echo "[pkm] Conda env '$CONDA_ENV' does not exist."
-  exit 1
+  echo "[pkm] Conda env '$CONDA_ENV' does not exist. Falling back to system Python."
+  exec "${PYTHON_BIN:-python3}" "$@"
 fi
 
 exec conda run -n "$CONDA_ENV" "$PYTHON_BIN" "$@"
