@@ -44,8 +44,8 @@ class BuildIndexesTests(unittest.TestCase):
             self.assertTrue(output_path.exists())
             content = output_path.read_text(encoding="utf-8")
             self.assertIn("# All People", content)
-            self.assertIn("- [[person_a]]", content)
-            self.assertIn("- [[person_b]]", content)
+            self.assertIn("- [person_a](../people/person_a.md)", content)
+            self.assertIn("- [person_b](../people/person_b.md)", content)
 
     def test_configured_output_has_priority_over_auto_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

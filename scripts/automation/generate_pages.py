@@ -10,6 +10,7 @@ Supported generated block directives:
 from __future__ import annotations
 
 import csv
+import posixpath
 import re
 import sys
 from dataclasses import dataclass
@@ -100,16 +101,34 @@ def escape_cell(value: str) -> str:
     return value.replace("|", "\\|").replace("\n", " ").strip()
 
 
-def render_link_cell(column: str, value: str, all_ids: set[str]) -> str:
+def build_note_link(note_path: Path, table_name: str, entity_id: str) -> str:
+    target = NOTES_DIR / table_name / f"{entity_id}.md"
+    rel = Path(posixpath.relpath(target.as_posix(), start=note_path.parent.as_posix()))
+    return f"[{entity_id}]({rel.as_posix()})"
+
+
+def render_link_cell(
+    note_path: Path,
+    row_table_name: str,
+    column: str,
+    value: str,
+    table_by_id: Dict[str, str],
+    entity_tables: set[str],
+) -> str:
     clean = value.strip()
     if not clean:
         return ""
-    if column == "id" or (column.endswith("_id") and clean in all_ids):
-        return f"[[{clean}]]"
+
+    if column == "id" and row_table_name in entity_tables:
+        return build_note_link(note_path, row_table_name, clean)
+
+    if column.endswith("_id") and clean in table_by_id:
+        return build_note_link(note_path, table_by_id[clean], clean)
+
     return clean
 
 
-def render_list_block(table_name: str, tables: Dict[str, TableData]) -> str:
+def render_list_block(note_path: Path, table_name: str, tables: Dict[str, TableData]) -> str:
     table = tables.get(table_name)
     lines = [f"<!-- GENERATED START: list:{table_name} -->"]
 
@@ -121,7 +140,7 @@ def render_list_block(table_name: str, tables: Dict[str, TableData]) -> str:
     items = sorted((row.get("id") or "").strip() for row in table.rows)
     items = [item for item in items if item]
     if items:
-        lines.extend(f"- [[{item}]]" for item in items)
+        lines.extend(f"- {build_note_link(note_path, table_name, item)}" for item in items)
     else:
         lines.append("- (none)")
 
@@ -129,7 +148,13 @@ def render_list_block(table_name: str, tables: Dict[str, TableData]) -> str:
     return "\n".join(lines)
 
 
-def render_table_block(table_name: str, tables: Dict[str, TableData], all_ids: set[str]) -> str:
+def render_table_block(
+    note_path: Path,
+    table_name: str,
+    tables: Dict[str, TableData],
+    table_by_id: Dict[str, str],
+    entity_tables: set[str],
+) -> str:
     table = tables.get(table_name)
     lines = [f"<!-- GENERATED START: table:{table_name} -->"]
 
@@ -145,7 +170,14 @@ def render_table_block(table_name: str, tables: Dict[str, TableData], all_ids: s
     for row in rows:
         rendered = []
         for column in table.columns:
-            value = render_link_cell(column, row.get(column, ""), all_ids)
+            value = render_link_cell(
+                note_path=note_path,
+                row_table_name=table_name,
+                column=column,
+                value=row.get(column, ""),
+                table_by_id=table_by_id,
+                entity_tables=entity_tables,
+            )
             rendered.append(escape_cell(value))
         lines.append("| " + " | ".join(rendered) + " |")
 
@@ -156,15 +188,21 @@ def render_table_block(table_name: str, tables: Dict[str, TableData], all_ids: s
     return "\n".join(lines)
 
 
-def render_directive_block(directive: str, tables: Dict[str, TableData], all_ids: set[str]) -> str | None:
+def render_directive_block(
+    note_path: Path,
+    directive: str,
+    tables: Dict[str, TableData],
+    table_by_id: Dict[str, str],
+    entity_tables: set[str],
+) -> str | None:
     if directive == "header":
         return None
 
     kind, _, target = directive.partition(":")
     if kind == "list" and target:
-        return render_list_block(target, tables)
+        return render_list_block(note_path, target, tables)
     if kind == "table" and target:
-        return render_table_block(target, tables, all_ids)
+        return render_table_block(note_path, target, tables, table_by_id, entity_tables)
     return None
 
 
@@ -181,16 +219,18 @@ def replace_header_prefix(
 
 
 def render_note(
+    note_path: Path,
     content: str,
     tables: Dict[str, TableData],
-    all_ids: set[str],
+    table_by_id: Dict[str, str],
+    entity_tables: set[str],
 ) -> Tuple[str, bool]:
     changed = False
 
     def repl(match: re.Match[str]) -> str:
         nonlocal changed
         directive = match.group("directive")
-        block = render_directive_block(directive, tables, all_ids)
+        block = render_directive_block(note_path, directive, tables, table_by_id, entity_tables)
         if block is None:
             return match.group(0)
         if block != match.group(0):
@@ -229,8 +269,8 @@ def render_notes(tables: Dict[str, TableData], rows_by_id: Dict[str, Dict[str, s
     if not NOTES_DIR.exists():
         return 0
 
-    all_ids = set(rows_by_id)
     updated = 0
+    entity_tables = {table.name for table in tables.values() if table.is_entity_table}
 
     for note_path in sorted(NOTES_DIR.rglob("*.md")):
         content = note_path.read_text(encoding="utf-8")
@@ -243,7 +283,7 @@ def render_notes(tables: Dict[str, TableData], rows_by_id: Dict[str, Dict[str, s
             entity_type = table_name
             new_content = replace_header_prefix(new_content, entity_id, entity_name, entity_type)
 
-        new_content, _ = render_note(new_content, tables, all_ids)
+        new_content, _ = render_note(note_path, new_content, tables, table_by_id, entity_tables)
         if new_content != content:
             note_path.write_text(new_content, encoding="utf-8")
             updated += 1
