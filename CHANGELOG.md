@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [0.4.0] - 2026-03-15
+
+### Added
+
+- Implemented automation to render a content directory in `README.md`.
+
+## [0.3.1] - 2026-03-15
+
+### Changed
+
+- Replaced id-based output format for a name-based approach in auto-generated indexes.
+
+## [0.3.0] - 2026-03-15
+
+### Changed
+
+- Changed output format for auto-generated indexes.
+
+## [0.2.1] - 2026-03-15
+
+### Added
+
+- Added migration script for wiki links.
+
+### Changed
+
+- Changed link generation behavior to use standard relative Markdown links.
+
+## [0.2.0] - 2026-03-15
+
+### Added
+
+- Auto-generated entity indexes and preserved explicit config precedence.
+
+## [0.1.1] - 2026-03-15
+
+### Fixed
+
+- Added fallback to system Python when Conda environment is unavailable.
+
 ## [0.1.0] - 2026-03-13
 
 ### Added
