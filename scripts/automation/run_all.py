@@ -13,6 +13,7 @@ SCRIPTS_DIR = ROOT / "scripts"
 PIPELINE = [
     Path("automation/generate_pages.py"),
     Path("automation/build_indexes.py"),
+    Path("automation/update_readme_directory.py"),
     Path("quality/validate.py"),
 ]
 
