@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import csv
 import json
+import posixpath
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -61,6 +62,32 @@ def default_entity_index_definition(entity_table: str) -> Dict[str, Any]:
     }
 
 
+def build_entity_table_by_id() -> Dict[str, str]:
+    table_by_id: Dict[str, str] = {}
+    for table_name in load_entity_tables():
+        csv_path = DATA_DIR / f"{table_name}.csv"
+        if not csv_path.exists():
+            continue
+        for row in read_csv(csv_path):
+            entity_id = (row.get("id") or "").strip()
+            if entity_id:
+                table_by_id[entity_id] = table_name
+    return table_by_id
+
+
+def build_note_link(from_dir: Path, table_name: str, entity_id: str) -> str:
+    target = INDEX_DIR.parent / table_name / f"{entity_id}.md"
+    rel = posixpath.relpath(target.as_posix(), start=from_dir.as_posix())
+    return f"[{entity_id}]({rel})"
+
+
+def render_entity_link(from_dir: Path, entity_id: str, table_by_id: Dict[str, str]) -> str:
+    table_name = table_by_id.get(entity_id)
+    if not table_name:
+        return entity_id
+    return build_note_link(from_dir, table_name, entity_id)
+
+
 def build_index_plan(config: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], int, int]:
     configured_indexes = config.get("indexes", [])
     if not isinstance(configured_indexes, list):
@@ -105,7 +132,12 @@ def remove_if_exists(path: Path) -> bool:
     return True
 
 
-def build_entity_list(title: str, entities: List[Dict[str, str]], entity_id_col: str) -> str:
+def build_entity_list(
+    title: str,
+    entities: List[Dict[str, str]],
+    entity_id_col: str,
+    table_by_id: Dict[str, str],
+) -> str:
     items = sorted((row.get(entity_id_col) or "").strip() for row in entities)
     items = [i for i in items if i]
 
@@ -113,7 +145,7 @@ def build_entity_list(title: str, entities: List[Dict[str, str]], entity_id_col:
     if not items:
         lines.append("- (none)")
     else:
-        lines.extend([f"- [[{pid}]]" for pid in items])
+        lines.extend([f"- {render_entity_link(INDEX_DIR, pid, table_by_id)}" for pid in items])
     lines.append("")
     return "\n".join(lines)
 
@@ -127,6 +159,7 @@ def build_grouped_relation(
     relation_item_fk: str,
     relation_role_col: str,
     role: str,
+    table_by_id: Dict[str, str],
 ) -> str:
     by_entity: Dict[str, List[str]] = {}
 
@@ -149,10 +182,10 @@ def build_grouped_relation(
         return "\n".join(lines)
 
     for entity_id in entity_ids:
-        lines.append(f"## [[{entity_id}]]")
+        lines.append(f"## {render_entity_link(INDEX_DIR, entity_id, table_by_id)}")
         items = sorted(set(by_entity.get(entity_id, [])))
         if items:
-            lines.extend([f"- [[{item_id}]]" for item_id in items])
+            lines.extend([f"- {render_entity_link(INDEX_DIR, item_id, table_by_id)}" for item_id in items])
         else:
             lines.append("- (none)")
         lines.append("")
@@ -168,6 +201,7 @@ def main() -> int:
         return 0
 
     INDEX_DIR.mkdir(parents=True, exist_ok=True)
+    table_by_id = build_entity_table_by_id()
 
     changed = 0
 
@@ -202,7 +236,7 @@ def main() -> int:
                 changed += int(remove_if_exists(output_path))
                 continue
 
-            content = build_entity_list(title, entities, entity_id_col)
+            content = build_entity_list(title, entities, entity_id_col, table_by_id)
             changed += int(write_if_changed(output_path, content))
             continue
 
@@ -249,6 +283,7 @@ def main() -> int:
                 relation_item_fk=relation_item_fk,
                 relation_role_col=relation_role_col,
                 role=role,
+                table_by_id=table_by_id,
             )
             changed += int(write_if_changed(output_path, content))
             continue
