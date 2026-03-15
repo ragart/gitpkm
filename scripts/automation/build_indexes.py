@@ -11,7 +11,7 @@ import csv
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"
@@ -32,6 +32,63 @@ def load_config() -> Dict[str, Any]:
     if not isinstance(data, dict):
         return {"indexes": []}
     return data
+
+
+def load_entity_tables() -> List[str]:
+    if not DATA_DIR.exists():
+        return []
+
+    entity_tables: List[str] = []
+    for csv_path in sorted(DATA_DIR.glob("*.csv")):
+        with csv_path.open("r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            columns = reader.fieldnames or []
+        if "id" in columns and "name" in columns:
+            entity_tables.append(csv_path.stem)
+
+    return entity_tables
+
+
+def default_entity_index_definition(entity_table: str) -> Dict[str, Any]:
+    title = f"All {entity_table.replace('_', ' ').title()}"
+    return {
+        "type": "entity_list",
+        "entity_table": entity_table,
+        "entity_id_column": "id",
+        "title": title,
+        "output": f"all_{entity_table}.md",
+        "remove_when_empty": True,
+    }
+
+
+def build_index_plan(config: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], int, int]:
+    configured_indexes = config.get("indexes", [])
+    if not isinstance(configured_indexes, list):
+        configured_indexes = []
+
+    indexes: List[Dict[str, Any]] = []
+    configured_outputs: set[str] = set()
+
+    for item in configured_indexes:
+        if not isinstance(item, dict):
+            continue
+        output = str(item.get("output", "")).strip()
+        if output:
+            configured_outputs.add(output)
+        indexes.append(item)
+
+    auto_added = 0
+    auto_skipped = 0
+    for entity_table in load_entity_tables():
+        auto_item = default_entity_index_definition(entity_table)
+        auto_output = str(auto_item["output"])
+        if auto_output in configured_outputs:
+            auto_skipped += 1
+            continue
+        indexes.append(auto_item)
+        auto_added += 1
+
+    return indexes, auto_added, auto_skipped
 
 
 def write_if_changed(path: Path, content: str) -> bool:
@@ -105,9 +162,9 @@ def build_grouped_relation(
 
 def main() -> int:
     config = load_config()
-    indexes = config.get("indexes", [])
-    if not isinstance(indexes, list) or not indexes:
-        print("Skipped index generation: no indexes configured in schema/automation.json")
+    indexes, auto_added, auto_skipped = build_index_plan(config)
+    if not indexes:
+        print("Skipped index generation: no index definitions found and no entity tables discovered")
         return 0
 
     INDEX_DIR.mkdir(parents=True, exist_ok=True)
@@ -199,7 +256,12 @@ def main() -> int:
         # Unknown index type: remove stale output to avoid carrying stale docs.
         changed += int(remove_if_exists(output_path))
 
-    print(f"Built index pages: changed={changed}")
+    print(
+        "Built index pages: "
+        f"changed={changed}, "
+        f"auto_added={auto_added}, "
+        f"auto_skipped_due_to_config={auto_skipped}"
+    )
     return 0
 
 
