@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [0.4.1] - 2026-03-15
+
+### Fixed
+
+- Fixed execution workflow for rendering a content directory in `README.md`.
+
 ## [0.4.0] - 2026-03-15
 
 ### Added
