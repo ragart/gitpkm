@@ -53,7 +53,7 @@ def load_entity_tables() -> List[str]:
 def default_entity_index_definition(entity_table: str) -> Dict[str, Any]:
     title = f"All {entity_table.replace('_', ' ').title()}"
     return {
-        "type": "entity_list",
+        "type": "entity_table",
         "entity_table": entity_table,
         "entity_id_column": "id",
         "title": title,
@@ -150,6 +150,44 @@ def build_entity_list(
     return "\n".join(lines)
 
 
+def escape_cell(value: str) -> str:
+    return value.replace("|", "\\|").replace("\n", " ").strip()
+
+
+def build_entity_table(
+    title: str,
+    entities: List[Dict[str, str]],
+    columns: List[str],
+    entity_id_col: str,
+    table_by_id: Dict[str, str],
+) -> str:
+    lines = [f"# {title}", ""]
+
+    if not columns:
+        lines.append("- (none)")
+        lines.append("")
+        return "\n".join(lines)
+
+    rows = sorted(entities, key=lambda row: (row.get(entity_id_col) or "").strip())
+    lines.append("| " + " | ".join(columns) + " |")
+    lines.append("| " + " | ".join("---" for _ in columns) + " |")
+
+    for row in rows:
+        rendered: List[str] = []
+        for column in columns:
+            value = (row.get(column) or "").strip()
+            if column == entity_id_col and value:
+                value = render_entity_link(INDEX_DIR, value, table_by_id)
+            rendered.append(escape_cell(value))
+        lines.append("| " + " | ".join(rendered) + " |")
+
+    if not rows:
+        lines.append("| " + " | ".join("(none)" for _ in columns) + " |")
+
+    lines.append("")
+    return "\n".join(lines)
+
+
 def build_grouped_relation(
     title: str,
     entities: List[Dict[str, str]],
@@ -237,6 +275,38 @@ def main() -> int:
                 continue
 
             content = build_entity_list(title, entities, entity_id_col, table_by_id)
+            changed += int(write_if_changed(output_path, content))
+            continue
+
+        if index_type == "entity_table":
+            entity_table = str(item.get("entity_table", "")).strip()
+            entity_id_col = str(item.get("entity_id_column", "id")).strip() or "id"
+            entity_csv = DATA_DIR / f"{entity_table}.csv"
+            if not entity_table or not entity_csv.exists():
+                changed += int(remove_if_exists(output_path))
+                continue
+
+            with entity_csv.open("r", encoding="utf-8", newline="") as f:
+                reader = csv.DictReader(f)
+                columns = reader.fieldnames or []
+                entities = list(reader)
+
+            entity_ids = [
+                (row.get(entity_id_col) or "").strip()
+                for row in entities
+                if (row.get(entity_id_col) or "").strip()
+            ]
+            if not entity_ids and remove_when_empty:
+                changed += int(remove_if_exists(output_path))
+                continue
+
+            content = build_entity_table(
+                title=title,
+                entities=entities,
+                columns=columns,
+                entity_id_col=entity_id_col,
+                table_by_id=table_by_id,
+            )
             changed += int(write_if_changed(output_path, content))
             continue
 

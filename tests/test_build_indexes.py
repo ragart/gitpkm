@@ -44,8 +44,9 @@ class BuildIndexesTests(unittest.TestCase):
             self.assertTrue(output_path.exists())
             content = output_path.read_text(encoding="utf-8")
             self.assertIn("# All People", content)
-            self.assertIn("- [person_a](../people/person_a.md)", content)
-            self.assertIn("- [person_b](../people/person_b.md)", content)
+            self.assertIn("| id | name |", content)
+            self.assertIn("| [person_a](../people/person_a.md) | Alpha |", content)
+            self.assertIn("| [person_b](../people/person_b.md) | Bravo |", content)
 
     def test_configured_output_has_priority_over_auto_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -110,6 +111,9 @@ class BuildIndexesTests(unittest.TestCase):
             games_index = index_dir / "all_games.md"
             self.assertTrue(games_index.exists())
             self.assertIn("# All Games", games_index.read_text(encoding="utf-8"))
+            games_content = games_index.read_text(encoding="utf-8")
+            self.assertIn("| id | name |", games_content)
+            self.assertIn("| [game_z](../games/game_z.md) | Zeta |", games_content)
 
 
 if __name__ == "__main__":
