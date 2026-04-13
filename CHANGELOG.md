@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [0.6.0] - 2026-04-13
+
+### Added
+
+- Added dataset bootstrap support in `pkm.py new`: when a dataset does not exist, columns can be created from `--columns` and from keys provided via `--set`.
+- Added GitHub Issue Forms for adding entities and relationships without manual CSV edits.
+- Added issue-driven GitHub Actions automation that applies form requests with `pkm.py` and updates the repository directly.
+
+### Changed
+
+- Updated CLI documentation with the remote GitHub issue-form workflow.
+- Updated issue-form workflow to commit changes directly to the default branch and close processed issues.
+- Updated issue-form workflow JavaScript actions to Node 24-compatible configuration (`actions/github-script@v8` and `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true`).
+
 ## [0.5.0] - 2026-04-13
 
 ### Added
