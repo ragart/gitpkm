@@ -35,6 +35,25 @@ def parse_key_value(items: List[str]) -> Dict[str, str]:
     return parsed
 
 
+def parse_columns(raw: str) -> List[str]:
+    if not raw:
+        return []
+
+    columns: List[str] = []
+    seen = set()
+    for item in raw.split(","):
+        col = item.strip()
+        if not col:
+            continue
+        if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", col):
+            raise ValueError(f"invalid column name: {col}")
+        if col in seen:
+            continue
+        seen.add(col)
+        columns.append(col)
+    return columns
+
+
 def read_table(path: Path) -> Tuple[List[str], List[Dict[str, str]]]:
     with path.open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
@@ -116,22 +135,38 @@ def run_automation() -> None:
 def command_new(args: argparse.Namespace) -> int:
     entity_type = args.entity_type.strip().lower()
     table_name = entity_type
-    table_path, fieldnames, rows = ensure_entity_table(table_name)
     extra_values = parse_key_value(args.set_values)
+    requested_columns = parse_columns(args.columns)
+    table_path = DATA_DIR / f"{table_name}.csv"
+    table_exists = table_path.exists()
+
+    if table_exists:
+        table_path, fieldnames, rows = ensure_entity_table(table_name)
+    else:
+        fieldnames = ["id", "name"]
+        rows = []
 
     reserved = {"id", "name"}
-    invalid_reserved = sorted(reserved.intersection(extra_values.keys()))
+    invalid_reserved = sorted(reserved.intersection(set(extra_values.keys()).union(requested_columns)))
     if invalid_reserved:
         if "id" in invalid_reserved:
-            raise ValueError("do not set id with --set; use --id")
-        raise ValueError("do not set name with --set; use the <name> positional argument")
+            raise ValueError("do not define id with --set/--columns; use --id")
+        raise ValueError("do not define name with --set/--columns; use the <name> positional argument")
 
-    unknown_columns = sorted(set(extra_values.keys()) - set(fieldnames))
-    if unknown_columns:
-        allowed_columns = ", ".join(sorted(fieldnames))
-        raise ValueError(
-            f"unknown columns for {table_name}: {', '.join(unknown_columns)}; allowed columns: {allowed_columns}"
-        )
+    if table_exists:
+        unknown_columns = sorted(set(extra_values.keys()).union(requested_columns) - set(fieldnames))
+        if unknown_columns:
+            allowed_columns = ", ".join(sorted(fieldnames))
+            raise ValueError(
+                f"unknown columns for {table_name}: {', '.join(unknown_columns)}; allowed columns: {allowed_columns}"
+            )
+    else:
+        for column in requested_columns:
+            if column not in fieldnames:
+                fieldnames.append(column)
+        for column in extra_values:
+            if column not in fieldnames:
+                fieldnames.append(column)
 
     entity_id = args.id or f"{entity_type}_{slugify(args.name)}"
     existing_ids = {(row.get("id") or "").strip() for row in rows}
@@ -228,6 +263,11 @@ def build_parser() -> argparse.ArgumentParser:
     new_parser.add_argument("entity_type", help="Exact dataset name, for example person, people, program, or programs")
     new_parser.add_argument("name", help="Display name for the entity")
     new_parser.add_argument("--id", help="Override the generated stable ID")
+    new_parser.add_argument(
+        "--columns",
+        default="",
+        help="Comma-separated columns to create when the dataset does not exist yet",
+    )
     new_parser.add_argument(
         "--set",
         dest="set_values",
