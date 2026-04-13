@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [0.5.0] - 2026-04-13
+
+### Added
+
+- Extended `pkm.py new` to accept repeated `--set key=value` pairs so entity rows can be created with all existing table columns in one command.
+- Added CLI contract tests for creating entities with additional fields and for rejecting unknown columns.
+
+### Changed
+
+- Updated CLI documentation to include `new` command syntax with optional `--set` values and examples.
+
 ## [0.4.1] - 2026-03-15
 
 ### Fixed

@@ -1,4 +1,7 @@
 import unittest
+import tempfile
+from pathlib import Path
+from unittest import mock
 
 import pkm
 
@@ -29,6 +32,62 @@ class PkmCliContractTests(unittest.TestCase):
                     "b": (["people_id", "programs_id"], []),
                 },
             )
+
+    def test_new_allows_setting_additional_entity_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "data"
+            data_dir.mkdir(parents=True)
+            (data_dir / "people.csv").write_text(
+                "id,name,email,role\n",
+                encoding="utf-8",
+            )
+
+            args = pkm.argparse.Namespace(
+                entity_type="people",
+                name="Alex Doe",
+                id=None,
+                set_values=["email=alex@example.com", "role=mentor"],
+            )
+
+            old_data_dir = pkm.DATA_DIR
+            try:
+                pkm.DATA_DIR = data_dir
+                with mock.patch("pkm.run_automation"):
+                    exit_code = pkm.command_new(args)
+            finally:
+                pkm.DATA_DIR = old_data_dir
+
+            self.assertEqual(exit_code, 0)
+            _, rows = pkm.read_table(data_dir / "people.csv")
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["id"], "people_alex_doe")
+            self.assertEqual(rows[0]["name"], "Alex Doe")
+            self.assertEqual(rows[0]["email"], "alex@example.com")
+            self.assertEqual(rows[0]["role"], "mentor")
+
+    def test_new_rejects_unknown_entity_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "data"
+            data_dir.mkdir(parents=True)
+            (data_dir / "people.csv").write_text(
+                "id,name,email\n",
+                encoding="utf-8",
+            )
+
+            args = pkm.argparse.Namespace(
+                entity_type="people",
+                name="Alex Doe",
+                id=None,
+                set_values=["nickname=alex"],
+            )
+
+            old_data_dir = pkm.DATA_DIR
+            try:
+                pkm.DATA_DIR = data_dir
+                with self.assertRaisesRegex(ValueError, "unknown columns for people: nickname"):
+                    pkm.command_new(args)
+            finally:
+                pkm.DATA_DIR = old_data_dir
 
 
 if __name__ == "__main__":

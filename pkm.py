@@ -117,6 +117,21 @@ def command_new(args: argparse.Namespace) -> int:
     entity_type = args.entity_type.strip().lower()
     table_name = entity_type
     table_path, fieldnames, rows = ensure_entity_table(table_name)
+    extra_values = parse_key_value(args.set_values)
+
+    reserved = {"id", "name"}
+    invalid_reserved = sorted(reserved.intersection(extra_values.keys()))
+    if invalid_reserved:
+        if "id" in invalid_reserved:
+            raise ValueError("do not set id with --set; use --id")
+        raise ValueError("do not set name with --set; use the <name> positional argument")
+
+    unknown_columns = sorted(set(extra_values.keys()) - set(fieldnames))
+    if unknown_columns:
+        allowed_columns = ", ".join(sorted(fieldnames))
+        raise ValueError(
+            f"unknown columns for {table_name}: {', '.join(unknown_columns)}; allowed columns: {allowed_columns}"
+        )
 
     entity_id = args.id or f"{entity_type}_{slugify(args.name)}"
     existing_ids = {(row.get("id") or "").strip() for row in rows}
@@ -127,6 +142,8 @@ def command_new(args: argparse.Namespace) -> int:
     row = {field: "" for field in fieldnames}
     row["id"] = entity_id
     row["name"] = args.name.strip()
+    for key, value in extra_values.items():
+        row[key] = value
     rows.append(row)
     write_table(table_path, fieldnames, rows)
 
@@ -211,6 +228,13 @@ def build_parser() -> argparse.ArgumentParser:
     new_parser.add_argument("entity_type", help="Exact dataset name, for example person, people, program, or programs")
     new_parser.add_argument("name", help="Display name for the entity")
     new_parser.add_argument("--id", help="Override the generated stable ID")
+    new_parser.add_argument(
+        "--set",
+        dest="set_values",
+        action="append",
+        default=[],
+        help="Additional entity field values as key=value",
+    )
     new_parser.set_defaults(func=command_new)
 
     link_parser = subparsers.add_parser("link", help="Create a relationship row between two existing IDs")
