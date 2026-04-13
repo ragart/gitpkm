@@ -46,6 +46,7 @@ class PkmCliContractTests(unittest.TestCase):
                 entity_type="people",
                 name="Alex Doe",
                 id=None,
+                columns="",
                 set_values=["email=alex@example.com", "role=mentor"],
             )
 
@@ -78,6 +79,7 @@ class PkmCliContractTests(unittest.TestCase):
                 entity_type="people",
                 name="Alex Doe",
                 id=None,
+                columns="",
                 set_values=["nickname=alex"],
             )
 
@@ -88,6 +90,59 @@ class PkmCliContractTests(unittest.TestCase):
                     pkm.command_new(args)
             finally:
                 pkm.DATA_DIR = old_data_dir
+
+    def test_new_creates_missing_dataset_columns_from_set(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "data"
+            data_dir.mkdir(parents=True)
+
+            args = pkm.argparse.Namespace(
+                entity_type="vip_people",
+                name="Iune Banderas, the Children of Fate",
+                id=None,
+                columns="",
+                set_values=["status=GROWING"],
+            )
+
+            old_data_dir = pkm.DATA_DIR
+            try:
+                pkm.DATA_DIR = data_dir
+                with mock.patch("pkm.run_automation"):
+                    exit_code = pkm.command_new(args)
+            finally:
+                pkm.DATA_DIR = old_data_dir
+
+            self.assertEqual(exit_code, 0)
+            fieldnames, rows = pkm.read_table(data_dir / "vip_people.csv")
+            self.assertEqual(fieldnames, ["id", "name", "status"])
+            self.assertEqual(rows[0]["status"], "GROWING")
+
+    def test_new_creates_missing_dataset_columns_from_columns_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "data"
+            data_dir.mkdir(parents=True)
+
+            args = pkm.argparse.Namespace(
+                entity_type="vip_people",
+                name="Iune Banderas",
+                id=None,
+                columns="status,rarity",
+                set_values=[],
+            )
+
+            old_data_dir = pkm.DATA_DIR
+            try:
+                pkm.DATA_DIR = data_dir
+                with mock.patch("pkm.run_automation"):
+                    exit_code = pkm.command_new(args)
+            finally:
+                pkm.DATA_DIR = old_data_dir
+
+            self.assertEqual(exit_code, 0)
+            fieldnames, rows = pkm.read_table(data_dir / "vip_people.csv")
+            self.assertEqual(fieldnames, ["id", "name", "status", "rarity"])
+            self.assertEqual(rows[0]["status"], "")
+            self.assertEqual(rows[0]["rarity"], "")
 
 
 if __name__ == "__main__":
