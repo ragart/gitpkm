@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [0.6.1] - 2026-04-14
+
+### Added
+
+- Added a maintainer-only guard for GitHub issue-form automation so only `OWNER`, `MEMBER`, and `COLLABORATOR` can trigger entity and relationship updates.
+
+### Changed
+
+- Documented that issue form visibility is controlled by the repository default branch, while `.github/pkm-issue-ops.enabled` only gates automation.
+
 ## [0.6.0] - 2026-04-13
 
 ### Added
