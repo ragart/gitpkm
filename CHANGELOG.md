@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [0.6.2] - 2026-04-14
+
+### Changed
+
+- Documented the recommended `main` + `issue-ops` branch strategy for GitHub issue-form editing.
+- Documented that issue form visibility is controlled by the repository default branch, while `.github/pkm-issue-ops.enabled` only gates automation.
+- Documented maintenance sync guidance for updating `issue-ops` from `main`.
+
 ## [0.6.1] - 2026-04-14
 
 ### Added
