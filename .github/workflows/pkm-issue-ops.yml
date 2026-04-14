@@ -20,6 +20,7 @@ jobs:
       enabled: ${{ steps.gate.outputs.enabled }}
       requested_mode: ${{ steps.detect.outputs.requested_mode }}
       mode: ${{ steps.detect.outputs.mode }}
+      authorized: ${{ steps.detect.outputs.authorized }}
 
     steps:
       - name: Checkout
@@ -72,6 +73,8 @@ jobs:
         with:
           script: |
             const issue = context.payload.issue;
+            const authorAssociation = (issue.author_association || '').toUpperCase();
+            const authorized = ['OWNER', 'MEMBER', 'COLLABORATOR'].includes(authorAssociation);
             const labels = (issue.labels || []).map(l => (l.name || '').toLowerCase());
             const body = (issue.body || '').toLowerCase();
             const title = (issue.title || '').toLowerCase();
@@ -91,8 +94,9 @@ jobs:
             }
 
             const enabled = '${{ steps.gate.outputs.enabled }}' === 'true';
-            const mode = enabled ? requestedMode : '';
+            const mode = enabled && authorized ? requestedMode : '';
 
+            core.setOutput('authorized', authorized ? 'true' : 'false');
             core.setOutput('requested_mode', requestedMode);
             core.setOutput('mode', mode);
 
@@ -312,4 +316,31 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               body: 'Issue automation is enabled, but this issue was not recognized as an Add Entity/Add Relationship request. Use the issue forms or include the expected sections in the issue body.'
+            });
+
+  issue-ops-forbidden:
+    if: ${{ needs.route-issue.outputs.enabled == 'true' && needs.route-issue.outputs.requested_mode != '' && needs.route-issue.outputs.authorized != 'true' }}
+    needs: route-issue
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain maintainer restriction
+        uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: 'This repository only accepts issue-form automation from maintainers (`OWNER`, `MEMBER`, or `COLLABORATOR`).'
+            });
+
+      - name: Close forbidden issue
+        uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
             });
