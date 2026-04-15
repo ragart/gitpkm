@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [0.6.3] - 2026-04-15
+
+### Fixed
+
+- Fixed note header generation so entity note frontmatter includes all entity-table columns, not only `id` and `type`.
+
+### Added
+
+- Added `python pkm.py reprocess-notes` to re-render all note headers and generated note blocks from current CSV tables.
+
 ## [0.6.2] - 2026-04-14
 
 ### Changed

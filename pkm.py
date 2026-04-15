@@ -132,6 +132,12 @@ def run_automation() -> None:
     build_indexes.main()
 
 
+def command_reprocess_notes(_: argparse.Namespace) -> int:
+    generate_pages.generate()
+    print("Reprocessed notes from current CSV tables.")
+    return 0
+
+
 def command_new(args: argparse.Namespace) -> int:
     entity_type = args.entity_type.strip().lower()
     table_name = entity_type
@@ -291,6 +297,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Additional field values as key=value",
     )
     link_parser.set_defaults(func=command_link)
+
+    reprocess_notes_parser = subparsers.add_parser(
+        "reprocess-notes",
+        help="Re-render generated note headers and blocks from current CSV tables",
+    )
+    reprocess_notes_parser.set_defaults(func=command_reprocess_notes)
 
     return parser
 
