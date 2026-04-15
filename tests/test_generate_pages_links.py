@@ -6,6 +6,52 @@ from scripts.automation import generate_pages
 
 
 class GeneratePagesLinksTests(unittest.TestCase):
+    def test_header_directive_refreshes_frontmatter_with_all_entity_columns(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            data_dir = root / "data"
+            notes_dir = root / "notes"
+            (notes_dir / "people").mkdir(parents=True)
+            data_dir.mkdir(parents=True)
+
+            (data_dir / "people.csv").write_text(
+                "id,name,email,status\nperson_a,Alpha,alpha@example.com,active\n",
+                encoding="utf-8",
+            )
+
+            note = notes_dir / "people" / "person_a.md"
+            note.write_text(
+                """---
+id: person_a
+type: people
+---
+<!-- GENERATED START: header -->
+# stale
+<!-- GENERATED END -->
+""",
+                encoding="utf-8",
+            )
+
+            old_root = generate_pages.ROOT
+            old_data = generate_pages.DATA_DIR
+            old_notes = generate_pages.NOTES_DIR
+            try:
+                generate_pages.ROOT = root
+                generate_pages.DATA_DIR = data_dir
+                generate_pages.NOTES_DIR = notes_dir
+                code = generate_pages.generate()
+            finally:
+                generate_pages.ROOT = old_root
+                generate_pages.DATA_DIR = old_data
+                generate_pages.NOTES_DIR = old_notes
+
+            self.assertEqual(code, 0)
+            content = note.read_text(encoding="utf-8")
+            self.assertIn('name: "Alpha"', content)
+            self.assertIn('email: "alpha@example.com"', content)
+            self.assertIn('status: "active"', content)
+            self.assertIn("# Alpha", content)
+
     def test_list_directive_renders_relative_markdown_links(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

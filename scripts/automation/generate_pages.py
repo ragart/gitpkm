@@ -77,12 +77,27 @@ def build_entity_lookup(tables: Dict[str, TableData]) -> Tuple[Dict[str, Dict[st
     return rows_by_id, table_by_id
 
 
-def render_header_prefix(entity_id: str, entity_name: str, entity_type: str) -> str:
-    return "\n".join(
+def yaml_quote(value: str) -> str:
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def render_header_prefix(entity_id: str, entity_type: str, row: Dict[str, str], columns: List[str]) -> str:
+    entity_name = (row.get("name") or "").strip() or entity_id
+    frontmatter_lines = [
+        "---",
+        f"id: {entity_id}",
+        f"type: {entity_type}",
+    ]
+
+    for column in columns:
+        if column in {"id", "type"}:
+            continue
+        value = (row.get(column) or "").strip()
+        frontmatter_lines.append(f"{column}: {yaml_quote(value)}")
+
+    frontmatter_lines.extend(
         [
-            "---",
-            f"id: {entity_id}",
-            f"type: {entity_type}",
             "---",
             "<!-- GENERATED START: header -->",
             f"# {entity_name}",
@@ -91,10 +106,11 @@ def render_header_prefix(entity_id: str, entity_name: str, entity_type: str) -> 
             "",
         ]
     )
+    return "\n".join(frontmatter_lines)
 
 
-def create_entity_note(entity_id: str, entity_name: str, entity_type: str) -> str:
-    return render_header_prefix(entity_id, entity_name, entity_type) + "Entity note.\n"
+def create_entity_note(entity_id: str, entity_type: str, row: Dict[str, str], columns: List[str]) -> str:
+    return render_header_prefix(entity_id, entity_type, row, columns) + "Entity note.\n"
 
 
 def escape_cell(value: str) -> str:
@@ -209,10 +225,11 @@ def render_directive_block(
 def replace_header_prefix(
     content: str,
     entity_id: str,
-    entity_name: str,
     entity_type: str,
+    row: Dict[str, str],
+    columns: List[str],
 ) -> str:
-    rendered = render_header_prefix(entity_id, entity_name, entity_type)
+    rendered = render_header_prefix(entity_id, entity_type, row, columns)
     if HEADER_PREFIX_RE.match(content):
         return HEADER_PREFIX_RE.sub(rendered, content, count=1)
     return content
@@ -257,9 +274,9 @@ def ensure_entity_notes(
         if note_path.exists():
             continue
 
-        entity_name = (row.get("name") or "").strip() or entity_id
         entity_type = table_name
-        note_path.write_text(create_entity_note(entity_id, entity_name, entity_type), encoding="utf-8")
+        table = tables[table_name]
+        note_path.write_text(create_entity_note(entity_id, entity_type, row, table.columns), encoding="utf-8")
         created += 1
 
     return created
@@ -279,9 +296,8 @@ def render_notes(tables: Dict[str, TableData], rows_by_id: Dict[str, Dict[str, s
         if entity_id in rows_by_id and START_RE.search(content):
             row = rows_by_id[entity_id]
             table_name = table_by_id[entity_id]
-            entity_name = (row.get("name") or "").strip() or entity_id
             entity_type = table_name
-            new_content = replace_header_prefix(new_content, entity_id, entity_name, entity_type)
+            new_content = replace_header_prefix(new_content, entity_id, entity_type, row, tables[table_name].columns)
 
         new_content, _ = render_note(note_path, new_content, tables, table_by_id, entity_tables)
         if new_content != content:

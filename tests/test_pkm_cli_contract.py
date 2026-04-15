@@ -144,6 +144,13 @@ class PkmCliContractTests(unittest.TestCase):
             self.assertEqual(rows[0]["status"], "")
             self.assertEqual(rows[0]["rarity"], "")
 
+    def test_reprocess_notes_command_runs_generate_pages(self) -> None:
+        with mock.patch("pkm.generate_pages.generate") as mocked_generate:
+            exit_code = pkm.command_reprocess_notes(pkm.argparse.Namespace())
+
+        self.assertEqual(exit_code, 0)
+        mocked_generate.assert_called_once_with()
+
 
 if __name__ == "__main__":
     unittest.main()
