@@ -10,6 +10,8 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
 
 - Added local CLI command `python pkm.py update <dataset> <id> --set key=value` to update existing entity rows by ID.
 - Added support for updating in-table relationship fields (for example `*_id` columns) through the new `update` command.
+- Added GitHub Issue Form support for update operations (`Update Entity`) mapped to `pkm.py update`.
+- Added issue workflow mode for entity updates with maintainer guard, full pipeline execution, and direct commit to default branch.
 
 ### Changed
 
