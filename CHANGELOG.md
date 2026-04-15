@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [0.7.0] - 2026-04-15
+
+### Added
+
+- Added local CLI command `python pkm.py update <dataset> <id> --set key=value` to update existing entity rows by ID.
+- Added support for updating in-table relationship fields (for example `*_id` columns) through the new `update` command.
+
+### Changed
+
+- Updated CLI documentation with `update` command usage and examples.
+
 ## [0.6.4] - 2026-04-15
 
 ### Changed
