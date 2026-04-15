@@ -151,6 +151,81 @@ class PkmCliContractTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         mocked_generate.assert_called_once_with()
 
+    def test_update_applies_fields_and_runs_automation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "data"
+            data_dir.mkdir(parents=True)
+            (data_dir / "game_disc.csv").write_text(
+                "id,name,game_title_id,status\ndisc_cusa,CUSA-19620,,draft\n",
+                encoding="utf-8",
+            )
+
+            args = pkm.argparse.Namespace(
+                entity_type="game_disc",
+                entity_id="disc_cusa",
+                set_values=["game_title_id=game_title_13_sentinels", "status=released"],
+            )
+
+            old_data_dir = pkm.DATA_DIR
+            try:
+                pkm.DATA_DIR = data_dir
+                with mock.patch("pkm.run_automation") as mocked_run_automation:
+                    exit_code = pkm.command_update(args)
+            finally:
+                pkm.DATA_DIR = old_data_dir
+
+            self.assertEqual(exit_code, 0)
+            mocked_run_automation.assert_called_once_with()
+            _, rows = pkm.read_table(data_dir / "game_disc.csv")
+            self.assertEqual(rows[0]["game_title_id"], "game_title_13_sentinels")
+            self.assertEqual(rows[0]["status"], "released")
+
+    def test_update_rejects_unknown_columns(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "data"
+            data_dir.mkdir(parents=True)
+            (data_dir / "people.csv").write_text(
+                "id,name\npeople_alex,Alex\n",
+                encoding="utf-8",
+            )
+
+            args = pkm.argparse.Namespace(
+                entity_type="people",
+                entity_id="people_alex",
+                set_values=["nickname=Lex"],
+            )
+
+            old_data_dir = pkm.DATA_DIR
+            try:
+                pkm.DATA_DIR = data_dir
+                with self.assertRaisesRegex(ValueError, "unknown columns for people: nickname"):
+                    pkm.command_update(args)
+            finally:
+                pkm.DATA_DIR = old_data_dir
+
+    def test_update_requires_existing_entity_id(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "data"
+            data_dir.mkdir(parents=True)
+            (data_dir / "people.csv").write_text(
+                "id,name\npeople_alex,Alex\n",
+                encoding="utf-8",
+            )
+
+            args = pkm.argparse.Namespace(
+                entity_type="people",
+                entity_id="people_bravo",
+                set_values=["name=Bravo"],
+            )
+
+            old_data_dir = pkm.DATA_DIR
+            try:
+                pkm.DATA_DIR = data_dir
+                with self.assertRaisesRegex(ValueError, "entity id not found in people: people_bravo"):
+                    pkm.command_update(args)
+            finally:
+                pkm.DATA_DIR = old_data_dir
+
 
 if __name__ == "__main__":
     unittest.main()

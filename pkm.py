@@ -193,6 +193,55 @@ def command_new(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_update(args: argparse.Namespace) -> int:
+    entity_type = args.entity_type.strip().lower()
+    entity_id = args.entity_id.strip()
+    updates = parse_key_value(args.set_values)
+
+    if not updates:
+        raise ValueError("at least one --set key=value is required")
+    if "id" in updates:
+        raise ValueError("updating id is not supported")
+
+    table_path = DATA_DIR / f"{entity_type}.csv"
+    if not table_path.exists():
+        raise ValueError(f"dataset does not exist: {entity_type}")
+
+    table_path, fieldnames, rows = ensure_entity_table(entity_type)
+
+    unknown_columns = sorted(set(updates.keys()) - set(fieldnames))
+    if unknown_columns:
+        allowed_columns = ", ".join(sorted(fieldnames))
+        raise ValueError(
+            f"unknown columns for {entity_type}: {', '.join(unknown_columns)}; allowed columns: {allowed_columns}"
+        )
+
+    target_row = None
+    for row in rows:
+        if (row.get("id") or "").strip() == entity_id:
+            target_row = row
+            break
+
+    if target_row is None:
+        raise ValueError(f"entity id not found in {entity_type}: {entity_id}")
+
+    changed = False
+    for key, value in updates.items():
+        old_value = (target_row.get(key) or "").strip()
+        if old_value != value:
+            target_row[key] = value
+            changed = True
+
+    if not changed:
+        print(f"No changes for {entity_type}: {entity_id}")
+        return 0
+
+    write_table(table_path, fieldnames, rows)
+    run_automation()
+    print(f"Updated {entity_type}: {entity_id}")
+    return 0
+
+
 def command_link(args: argparse.Namespace) -> int:
     tables = load_tables()
     id_lookup = build_id_lookup(tables)
@@ -297,6 +346,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Additional field values as key=value",
     )
     link_parser.set_defaults(func=command_link)
+
+    update_parser = subparsers.add_parser("update", help="Update an existing entity row by ID")
+    update_parser.add_argument("entity_type", help="Exact dataset name, for example people or game_disc")
+    update_parser.add_argument("entity_id", help="Existing entity ID in that dataset")
+    update_parser.add_argument(
+        "--set",
+        dest="set_values",
+        action="append",
+        required=True,
+        help="Field value update as key=value (repeatable)",
+    )
+    update_parser.set_defaults(func=command_update)
 
     reprocess_notes_parser = subparsers.add_parser(
         "reprocess-notes",
