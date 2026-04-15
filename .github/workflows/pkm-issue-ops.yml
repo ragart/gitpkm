@@ -145,6 +145,10 @@ jobs:
         run: |
           python scripts/automation/process_issue_form.py --mode entity --body-file issue_body.md
 
+      - name: Run full automation pipeline
+        run: |
+          python scripts/automation/run_all.py
+
       - name: Commit and push to default branch
         id: push
         continue-on-error: true
@@ -228,6 +232,10 @@ jobs:
       - name: Apply relationship request
         run: |
           python scripts/automation/process_issue_form.py --mode link --body-file issue_body.md
+
+      - name: Run full automation pipeline
+        run: |
+          python scripts/automation/run_all.py
 
       - name: Commit and push to default branch
         id: push
