@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [0.6.4] - 2026-04-15
+
+### Changed
+
+- Updated GitHub issue-form automation to run the full pipeline after entity/link operations so generated outputs (including README dataset inventory counters) stay synchronized.
+
 ## [0.6.3] - 2026-04-15
 
 ### Fixed
