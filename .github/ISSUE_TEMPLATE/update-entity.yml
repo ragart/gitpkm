@@ -1,0 +1,41 @@
+name: Update Entity
+description: Update fields of an existing entity row.
+title: "Update entity: "
+labels:
+  - pkm:update-entity
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Submit this form to update one existing entity row through automation.
+
+        Notes:
+        - Dataset names are exact and map to data/<dataset>.csv.
+        - Entity ID must already exist in that dataset.
+        - Field updates use one key=value pair per line.
+  - type: input
+    id: dataset
+    attributes:
+      label: Dataset
+      description: Exact dataset/table name, for example people or game_disc.
+      placeholder: game_disc
+    validations:
+      required: true
+  - type: input
+    id: entity_id
+    attributes:
+      label: Entity ID
+      description: Existing entity ID in the selected dataset.
+      placeholder: disc_cusa
+    validations:
+      required: true
+  - type: textarea
+    id: field_updates
+    attributes:
+      label: Field Updates (Required)
+      description: One key=value pair per line. Keys must already exist in the dataset.
+      placeholder: |
+        game_title_id=game_title_13_sentinels
+        status=released
+    validations:
+      required: true

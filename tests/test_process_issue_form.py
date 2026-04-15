@@ -56,6 +56,18 @@ Alex Doe
         with self.assertRaisesRegex(ValueError, "invalid key=value pair"):
             process_issue_form.parse_kv_lines("not-a-pair")
 
+    def test_build_update_command_includes_set_pairs(self) -> None:
+        sections = {
+            "Dataset": "game_disc",
+            "Entity ID": "disc_cusa",
+            "Field Updates (Required)": "game_title_id=game_title_13_sentinels\nstatus=released",
+        }
+        cmd = process_issue_form.build_update_command(sections)
+        self.assertEqual(cmd[1:5], ["pkm.py", "update", "game_disc", "disc_cusa"])
+        self.assertEqual(cmd.count("--set"), 2)
+        self.assertIn("game_title_id=game_title_13_sentinels", cmd)
+        self.assertIn("status=released", cmd)
+
 
 if __name__ == "__main__":
     unittest.main()

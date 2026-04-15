@@ -114,9 +114,22 @@ def build_link_command(sections: Dict[str, str]) -> List[str]:
     return cmd
 
 
+def build_update_command(sections: Dict[str, str]) -> List[str]:
+    dataset = required(sections, "Dataset")
+    entity_id = required(sections, "Entity ID")
+    updates = parse_kv_lines(sections.get("Field Updates (Required)", ""))
+    if not updates:
+        raise ValueError("missing required field in issue form: Field Updates (Required)")
+
+    cmd = [sys.executable, "pkm.py", "update", dataset, entity_id]
+    for pair in updates:
+        cmd.extend(["--set", pair])
+    return cmd
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Process PKM GitHub issue forms")
-    parser.add_argument("--mode", choices=["entity", "link"], required=True)
+    parser.add_argument("--mode", choices=["entity", "link", "update"], required=True)
     parser.add_argument("--body-file", required=True, help="Path to issue body markdown file")
     args = parser.parse_args()
 
@@ -126,6 +139,8 @@ def main() -> int:
 
     if args.mode == "entity":
         cmd = build_entity_command(sections)
+    elif args.mode == "update":
+        cmd = build_update_command(sections)
     else:
         cmd = build_link_command(sections)
 
