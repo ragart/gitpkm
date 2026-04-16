@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gitpkm.local/schema/import_mapping.contract.schema.json",
+  "title": "GitPKM Import Mapping Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["entities", "relations"],
+  "properties": {
+    "match": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_columns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "required_csv_columns": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entity"
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/relation"
+      }
+    }
+  },
+  "$defs": {
+    "sourceSpec": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Either a source column name, ref:<entity_key>, or const:<literal>."
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/sourceSpec"
+      }
+    },
+    "entity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["table", "name_column", "id_template"],
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "table": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name_column": {
+          "type": "string",
+          "minLength": 1
+        },
+        "id_template": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fields": {
+          "$ref": "#/$defs/fields"
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["table", "fields"],
+      "properties": {
+        "table": {
+          "type": "string",
+          "minLength": 1
+        },
+        "id_template": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fields": {
+          "$ref": "#/$defs/fields",
+          "minProperties": 1
+        }
+      }
+    }
+  }
+}

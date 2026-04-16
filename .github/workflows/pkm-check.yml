@@ -22,6 +22,10 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Validate import mappings
+        run: |
+          python scripts/quality/validate_import_mappings.py
+
       - name: Run PKM pipeline
         run: |
           bash scripts/runtime/pkm_python.sh scripts/automation/run_all.py
