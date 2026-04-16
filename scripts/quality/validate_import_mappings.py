@@ -12,11 +12,11 @@ import json
 import sys
 from pathlib import Path
 
-import pkm
-
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SCHEMA = ROOT / "schema" / "import_mapping.contract.schema.json"
 DEFAULT_MAPPINGS_DIR = ROOT / "schema" / "import_mappings"
+
+import pkm
 
 
 def load_json(path: Path) -> dict:

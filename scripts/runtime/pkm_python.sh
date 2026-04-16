@@ -4,6 +4,13 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SETTINGS_FILE="$REPO_ROOT/.env"
 
+# Standardize module resolution for all repo scripts.
+if [[ -n "${PYTHONPATH:-}" ]]; then
+  export PYTHONPATH="$REPO_ROOT:$PYTHONPATH"
+else
+  export PYTHONPATH="$REPO_ROOT"
+fi
+
 if [[ -f "$SETTINGS_FILE" ]]; then
   set -a
   # shellcheck disable=SC1090
