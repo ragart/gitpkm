@@ -43,7 +43,8 @@ jobs:
             const desired = [
               { name: 'pkm:add-entity', color: '0e8a16', description: 'Process issue as PKM entity request' },
               { name: 'pkm:add-link', color: '1d76db', description: 'Process issue as PKM relationship request' },
-              { name: 'pkm:update-entity', color: '5319e7', description: 'Process issue as PKM entity update request' }
+              { name: 'pkm:update-entity', color: '5319e7', description: 'Process issue as PKM entity update request' },
+              { name: 'pkm:bulk-import', color: 'fbca04', description: 'Process issue as PKM bulk import request' }
             ];
 
             for (const label of desired) {
@@ -90,6 +91,9 @@ jobs:
             const looksLikeUpdate = labels.includes('pkm:update-entity')
               || title.startsWith('update entity:')
               || (body.includes('### dataset') && body.includes('### entity id') && body.includes('### field updates (required)'));
+            const looksLikeBulkImport = labels.includes('pkm:bulk-import')
+              || title.startsWith('bulk import:')
+              || (body.includes('### mapping (required)') && body.includes('### csv content (required)'));
 
             if (looksLikeEntity) {
               requestedMode = 'entity';
@@ -97,6 +101,8 @@ jobs:
               requestedMode = 'link';
             } else if (looksLikeUpdate) {
               requestedMode = 'update';
+            } else if (looksLikeBulkImport) {
+              requestedMode = 'bulk_import';
             }
 
             const enabled = '${{ steps.gate.outputs.enabled }}' === 'true';
@@ -130,6 +136,15 @@ jobs:
                 repo: context.repo.repo,
                 issue_number: issue.number,
                 labels: ['pkm:update-entity']
+              });
+            }
+
+            if (enabled && mode === 'bulk_import' && !labels.includes('pkm:bulk-import')) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: ['pkm:bulk-import']
               });
             }
 
@@ -382,6 +397,94 @@ jobs:
                 repo: context.repo.repo,
                 issue_number: issueNumber,
                 body: 'No changes were generated (for example, the row already had those values).'
+              });
+            }
+
+      - name: Close issue
+        if: ${{ steps.push.outcome == 'success' }}
+        uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
+            });
+
+  bulk-import:
+    if: ${{ needs.route-issue.outputs.mode == 'bulk_import' }}
+    needs: route-issue
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Save issue body
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('node:fs');
+            fs.writeFileSync('issue_body.md', context.payload.issue.body || '', 'utf8');
+
+      - name: Apply bulk import request
+        run: |
+          python scripts/automation/process_issue_form.py --mode bulk_import --body-file issue_body.md
+
+      - name: Run full automation pipeline
+        run: |
+          python scripts/automation/run_all.py
+
+      - name: Commit and push to default branch
+        id: push
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "feat: apply bulk import request from issue #${{ github.event.issue.number }}"
+          git push origin HEAD:${{ github.event.repository.default_branch }}
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Comment with bulk import result
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const outcome = '${{ steps.push.outcome }}';
+            const changed = '${{ steps.push.outputs.changed }}';
+            const issueNumber = context.issue.number;
+            if (outcome === 'failure') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: 'Bulk import request was processed but push to default branch failed. Check branch protection and workflow write permissions.'
+              });
+            } else if (changed === 'true') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `Applied bulk import request directly to \`${context.payload.repository.default_branch}\`.`
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: 'No changes were generated (for example, input rows were already up to date).'
               });
             }
 

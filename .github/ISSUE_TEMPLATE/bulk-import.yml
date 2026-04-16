@@ -1,0 +1,39 @@
+name: Bulk Import
+description: Run a mapping-driven bulk import using pasted CSV content.
+title: "Bulk import: "
+labels:
+  - pkm:bulk-import
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Submit this form to run `pkm.py bulk-import --apply` through automation.
+
+        Notes:
+        - Mapping must exist in `schema/import_mappings` or be a resolvable path.
+        - Paste CSV including the header row.
+        - Import runs with `--apply` and then the full automation pipeline.
+  - type: input
+    id: mapping
+    attributes:
+      label: Mapping (Required)
+      description: Mapping key (file stem) or path accepted by `pkm.py bulk-import --mapping`.
+      placeholder: game_release_disc_title
+    validations:
+      required: true
+  - type: input
+    id: mappings_dir
+    attributes:
+      label: Mappings Directory (Optional)
+      description: Override default mappings directory.
+      placeholder: schema/import_mappings
+  - type: textarea
+    id: csv_content
+    attributes:
+      label: CSV Content (Required)
+      description: Paste CSV text including header row.
+      placeholder: |
+        game_release_name,game_release_year,game_title_name
+        Example Release,2022,Example Title
+    validations:
+      required: true

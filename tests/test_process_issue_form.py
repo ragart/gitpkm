@@ -68,6 +68,27 @@ Alex Doe
         self.assertIn("game_title_id=game_title_13_sentinels", cmd)
         self.assertIn("status=released", cmd)
 
+    def test_build_bulk_import_command_includes_mapping_and_apply(self) -> None:
+        sections = {
+            "Mapping (Required)": "game_release_disc_title",
+            "Mappings Directory (Optional)": "schema/import_mappings",
+            "CSV Content (Required)": "header_a,header_b\nvalue_a,value_b\n",
+        }
+        cmd = process_issue_form.build_bulk_import_command(sections, process_issue_form.ROOT / "tmp.csv")
+        self.assertEqual(cmd[1:4], ["pkm.py", "bulk-import", "--input"])
+        self.assertIn("--mapping", cmd)
+        self.assertIn("game_release_disc_title", cmd)
+        self.assertIn("--apply", cmd)
+        self.assertIn("--mappings-dir", cmd)
+        self.assertIn("schema/import_mappings", cmd)
+
+    def test_build_bulk_import_command_requires_mapping(self) -> None:
+        sections = {
+            "CSV Content (Required)": "header_a,header_b\nvalue_a,value_b\n",
+        }
+        with self.assertRaisesRegex(ValueError, r"missing required field in issue form: Mapping \(Required\)"):
+            process_issue_form.build_bulk_import_command(sections, process_issue_form.ROOT / "tmp.csv")
+
 
 if __name__ == "__main__":
     unittest.main()

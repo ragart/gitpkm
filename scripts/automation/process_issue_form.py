@@ -7,6 +7,7 @@ import argparse
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Dict, List
 
@@ -127,9 +128,28 @@ def build_update_command(sections: Dict[str, str]) -> List[str]:
     return cmd
 
 
+def build_bulk_import_command(sections: Dict[str, str], import_file: Path) -> List[str]:
+    mapping = required(sections, "Mapping (Required)")
+    mappings_dir = optional(sections, "Mappings Directory (Optional)")
+
+    cmd = [
+        sys.executable,
+        "pkm.py",
+        "bulk-import",
+        "--input",
+        str(import_file),
+        "--mapping",
+        mapping,
+        "--apply",
+    ]
+    if mappings_dir:
+        cmd.extend(["--mappings-dir", mappings_dir])
+    return cmd
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Process PKM GitHub issue forms")
-    parser.add_argument("--mode", choices=["entity", "link", "update"], required=True)
+    parser.add_argument("--mode", choices=["entity", "link", "update", "bulk_import"], required=True)
     parser.add_argument("--body-file", required=True, help="Path to issue body markdown file")
     args = parser.parse_args()
 
@@ -139,20 +159,38 @@ def main() -> int:
 
     if args.mode == "entity":
         cmd = build_entity_command(sections)
+        temp_import_file = None
+    elif args.mode == "bulk_import":
+        csv_content = required(sections, "CSV Content (Required)")
+        temp_fd, temp_path = tempfile.mkstemp(prefix="pkm_issue_import_", suffix=".csv", dir=ROOT)
+        temp_import_file = Path(temp_path)
+        try:
+            with open(temp_fd, "w", encoding="utf-8", newline="") as handle:
+                handle.write(csv_content)
+            cmd = build_bulk_import_command(sections, temp_import_file)
+        except Exception:
+            temp_import_file.unlink(missing_ok=True)
+            raise
     elif args.mode == "update":
         cmd = build_update_command(sections)
+        temp_import_file = None
     else:
         cmd = build_link_command(sections)
+        temp_import_file = None
 
-    print("Running command:", " ".join(cmd))
-    result = subprocess.run(cmd, cwd=ROOT, text=True, capture_output=True)
-    if result.stdout:
-        print(result.stdout, end="")
-    if result.returncode != 0:
-        if result.stderr:
-            print(result.stderr, end="", file=sys.stderr)
-        return result.returncode
-    return 0
+    try:
+        print("Running command:", " ".join(cmd))
+        result = subprocess.run(cmd, cwd=ROOT, text=True, capture_output=True)
+        if result.stdout:
+            print(result.stdout, end="")
+        if result.returncode != 0:
+            if result.stderr:
+                print(result.stderr, end="", file=sys.stderr)
+            return result.returncode
+        return 0
+    finally:
+        if temp_import_file is not None:
+            temp_import_file.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
