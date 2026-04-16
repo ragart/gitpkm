@@ -24,7 +24,7 @@ jobs:
 
       - name: Validate import mappings
         run: |
-          python scripts/quality/validate_import_mappings.py
+          bash scripts/runtime/pkm_python.sh scripts/quality/validate_import_mappings.py
 
       - name: Run PKM pipeline
         run: |
