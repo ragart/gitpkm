@@ -22,6 +22,7 @@ The project is model-first:
 - [Automation-and-Validation](https://github.com/ragart/gitpkm/wiki/Automation-and-Validation)
 - Automation config: see [schema/automation.json](schema/automation.json)
 - Example automation config: see [schema/automation.example.json](schema/automation.example.json)
+- Import mappings: see [schema/import_mappings](schema/import_mappings)
 - [Publishing-Safety](https://github.com/ragart/gitpkm/wiki/Publishing-Safety)
 - [Operational-Conventions](https://github.com/ragart/gitpkm/wiki/Operational-Conventions)
 
