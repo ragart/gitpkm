@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
+## [0.8.0] - 2026-04-15
+
+### Added
+
+- Added local CLI command `python pkm.py bulk-import --input <file.csv> [--mapping <name|path|auto>] [--mappings-dir <dir>] [--apply]` for reusable mapping-driven CSV imports.
+- Added dry-run-by-default import execution with optional `--apply` mode for writing table updates.
+- Added reusable mapping files under `schema/import_mappings/` with named files and auto-selection by source headers.
+- Added mapping support for ordered entity upserts and optional relation upserts using `ref:<entity_key>` references.
+- Added `python pkm.py mappings list` to discover mappings and report mapping validity.
+- Added `python pkm.py mappings validate` to validate mapping structure and optional source-CSV compatibility.
+- Added `--validate-only` mode to `bulk-import` for preflight validation without row processing.
+- Added `schema/import_mapping.contract.schema.json` and a CI validation step for reusable mapping files.
+- Added `required_csv_columns` as a contract alias for header matching so the design is closer to the original 0.8.0 sketch.
+
+### Changed
+
+- Updated CLI documentation with bulk import syntax, behavior, and mapping token rules.
+
 ## [0.7.0] - 2026-04-15
 
 ### Added
